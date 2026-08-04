@@ -1,0 +1,17 @@
+{
+  "role_types": {
+    "product_backend": ["product engineer", "backend engineer", "software engineer"],
+    "platform": ["platform engineer", "developer infrastructure"]
+  },
+  "excluded_role_types": ["frontend engineer", "machine learning engineer", "data scientist"],
+  "seniority": ["senior", "staff", "principal"],
+  "eligible_locations": ["portugal", "europe", "emea", "worldwide"],
+  "remote_allowed": true,
+  "remote_terms": ["remote", "distributed", "work from anywhere"],
+  "preferred_domains": ["developer tools", "observability", "incident management", "saas", "ai agents"],
+  "strong_skills": [],
+  "transferable_skills": [],
+  "required_keywords": [],
+  "excluded_keywords": ["onsite", "us only"],
+  "minimum_score": 5
+}
