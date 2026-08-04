@@ -113,6 +113,12 @@ func main() {
 	}
 	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		filter := r.URL.Query().Get("recommendation")
+		if filter == "" {
+			filter = "review"
+		}
+		if filter == "all" {
+			filter = ""
+		}
 		jobs, err := s.store.ListScored(100, filter)
 		if err != nil {
 			http.Error(w, "could not load dashboard", http.StatusInternalServerError)

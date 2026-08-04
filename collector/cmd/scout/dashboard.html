@@ -42,7 +42,7 @@
       <p class="lede">Analyzed job postings, newest first.</p>
     </div>
     <nav>
-      <a class="{{if eq .Filter ""}}active{{end}}" href="/">All</a>
+      <a class="{{if eq .Filter "all"}}active{{end}}" href="/?recommendation=all">All</a>
       <a class="{{if eq .Filter "review"}}active{{end}}" href="/?recommendation=review">Review</a>
       <a class="{{if eq .Filter "skip"}}active{{end}}" href="/?recommendation=skip">Skipped</a>
     </nav>
