@@ -9,6 +9,84 @@ The first vertical slice is deliberately small:
 Greenhouse API -> Go Scout -> SQLite + Redis Stream -> Python Analyst -> SQLite
 ```
 
+## Architecture
+
+JobPulse is split into two independently runnable services connected by Redis
+Streams:
+
+```text
+                         job.posting.discovered
+┌──────────────────┐     ┌─────────────────┐     ┌────────────────────┐
+│ Go Scout         │────▶│ Redis Streams   │────▶│ Python Analyst      │
+│                  │     │                 │     │                    │
+│ Greenhouse poll │     │ Consumer group  │     │ Profile matching   │
+│ Normalize jobs  │     │ At-least-once   │     │ Salary extraction  │
+│ Deduplicate     │     │ delivery        │     │ Optional DeepSeek  │
+│ Publish events  │     └─────────────────┘     │ Persist analysis   │
+└────────┬─────────┘                           └──────────┬─────────┘
+         │                                                │
+         └──────────────────┬─────────────────────────────┘
+                            ▼
+                    ┌─────────────────┐
+                    │ SQLite          │
+                    │                 │
+                    │ postings       │
+                    │ scored_postings│
+                    └─────────────────┘
+```
+
+### Go Scout
+
+`collector/cmd/scout` runs one polling loop per configured Greenhouse board.
+It uses `context.Context` for cancellation, a shared HTTP client, and a small
+HTTP control surface:
+
+- `GET /healthz` checks process health.
+- `POST /trigger/greenhouse` starts an immediate poll of all configured boards.
+
+Each posting is normalized into a shared JSON shape. SQLite stores the posting
+and a content hash. An event is published only when the posting is new or its
+meaningful content changed. This keeps repeated polls idempotent.
+
+### Redis Streams
+
+The `job.posting.discovered` stream is the service boundary. Analyst consumes it
+through a Redis consumer group. Messages are acknowledged only after analysis
+has been persisted, providing at-least-once processing. A failed message stays
+pending instead of being silently lost.
+
+### Python Analyst
+
+Analyst processes each posting in layers:
+
+1. The external candidate profile applies role, seniority, location, domain,
+   skill, exclusion, and compensation rules.
+2. Deterministic analysis extracts evidence, concerns, role type, and salary
+   ranges. This baseline does not require an API key.
+3. If `DEEPSEEK_API_KEY` is configured, DeepSeek enriches the baseline with
+   structured interpretation, questions to verify, and a tailored summary.
+4. The result is persisted before the Redis message is acknowledged.
+
+DeepSeek is deliberately optional. The deterministic layer remains the source
+of hard-gate decisions, so a provider outage cannot stop the pipeline or make
+the application dependent on one model vendor.
+
+### Candidate Profile
+
+Candidate-specific preferences live outside the application code in
+`profile/profile.json`, which is ignored by Git. The reusable
+`profile/profile.example.json` documents the schema. This keeps JobPulse
+agnostic: another user can use the same application with a different profile,
+without changing Python or Go code.
+
+### Persistence
+
+SQLite is used for the first local vertical slice to minimize infrastructure.
+The `postings` table stores normalized source data and deduplication state.
+The `scored_postings` table stores the baseline score, recommendation, matched
+skills, gaps, and structured analysis summary. PostgreSQL is a future migration
+once the workflow proves useful.
+
 ## Run locally
 
 Prerequisites: Go 1.22+, Python 3.11+, and Docker.
