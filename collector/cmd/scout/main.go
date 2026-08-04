@@ -2,10 +2,14 @@ package main
 
 import (
 	"context"
+	"embed"
+	"encoding/json"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -23,6 +27,15 @@ type scout struct {
 	publisher *events.Publisher
 	client    *http.Client
 	boards    []string
+}
+
+//go:embed dashboard.html
+var dashboardHTML embed.FS
+
+type dashboardData struct {
+	Jobs   []storage.ScoredPosting
+	Filter string
+	Error  string
 }
 
 func (s *scout) poll(ctx context.Context, board string) {
@@ -93,6 +106,37 @@ func main() {
 		}()
 	}
 	h := http.NewServeMux()
+	dashboard, err := template.ParseFS(dashboardHTML, "dashboard.html")
+	if err != nil {
+		slog.Error("load dashboard", "error", err)
+		os.Exit(1)
+	}
+	h.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		filter := r.URL.Query().Get("recommendation")
+		jobs, err := s.store.ListScored(100, filter)
+		if err != nil {
+			http.Error(w, "could not load dashboard", http.StatusInternalServerError)
+			return
+		}
+		if err := dashboard.Execute(w, dashboardData{Jobs: jobs, Filter: filter}); err != nil {
+			slog.Error("render dashboard", "error", err)
+		}
+	})
+	h.HandleFunc("/api/postings", func(w http.ResponseWriter, r *http.Request) {
+		limit := 100
+		if value := r.URL.Query().Get("limit"); value != "" {
+			if parsed, err := strconv.Atoi(value); err == nil {
+				limit = parsed
+			}
+		}
+		jobs, err := s.store.ListScored(limit, r.URL.Query().Get("recommendation"))
+		if err != nil {
+			http.Error(w, "could not load postings", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(jobs)
+	})
 	h.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))

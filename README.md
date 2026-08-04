@@ -29,9 +29,14 @@ Streams:
                             ▼
                     ┌─────────────────┐
                     │ SQLite          │
-                    │                 │
-                    │ postings       │
-                    │ scored_postings│
+                    │ postings        │
+                    │ scored_postings │
+                    └────────┬────────┘
+                             │
+                             ▼
+                    ┌─────────────────┐
+                    │ Read-only       │
+                    │ Go web dashboard│
                     └─────────────────┘
 ```
 
@@ -87,6 +92,14 @@ The `scored_postings` table stores the baseline score, recommendation, matched
 skills, gaps, and structured analysis summary. PostgreSQL is a future migration
 once the workflow proves useful.
 
+### Dashboard
+
+Scout serves a small server-rendered dashboard at `http://localhost:8080/`.
+It reads analyzed jobs from SQLite and supports filtering by recommendation.
+The same data is available as JSON at `/api/postings`, with optional
+`recommendation` and `limit` query parameters. The dashboard is intentionally
+read-only and has no JavaScript framework or separate service.
+
 ## Run locally
 
 Prerequisites: Go 1.22+, Python 3.11+, and Docker.
@@ -135,6 +148,8 @@ Trigger a poll manually with:
 ```sh
 curl -X POST http://localhost:8080/trigger/greenhouse
 ```
+
+Open `http://localhost:8080/` to review analyzed jobs in the browser.
 
 The default database is `./data/jobpulse.db`. Results can be inspected with
 SQLite or the consumer logs. Deterministic analysis always runs first. To

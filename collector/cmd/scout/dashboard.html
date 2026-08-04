@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JobPulse Dashboard</title>
+  <style>
+    :root { color-scheme: dark; --bg: #101416; --panel: #182024; --muted: #9eafb3; --accent: #6ee7b7; --line: #2a373b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: #edf5f2; font: 15px/1.5 system-ui, sans-serif; }
+    main { max-width: 1180px; margin: 0 auto; padding: 40px 20px 64px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+    h1 { margin: 0; font-size: 32px; letter-spacing: -0.04em; }
+    .lede { color: var(--muted); margin: 4px 0 0; }
+    nav { display: flex; gap: 8px; flex-wrap: wrap; }
+    nav a { color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; text-decoration: none; }
+    nav a.active, nav a:hover { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+    .grid { display: grid; gap: 14px; }
+    article { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+    .top { display: flex; justify-content: space-between; gap: 16px; }
+    h2 { font-size: 19px; margin: 0; }
+    h2 a { color: inherit; text-decoration: none; }
+    h2 a:hover { color: var(--accent); }
+    .meta, .detail { color: var(--muted); }
+    .meta { margin: 3px 0 14px; }
+    .badge { border-radius: 999px; padding: 4px 9px; height: fit-content; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    .review { color: #fcd34d; background: #4a3d16; }
+    .skip { color: #fca5a5; background: #4a2024; }
+    .score { color: var(--accent); font-weight: 700; white-space: nowrap; }
+    details { margin-top: 12px; }
+    summary { color: var(--muted); cursor: pointer; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; color: #c5d4d1; font-size: 12px; }
+    .empty { color: var(--muted); padding: 32px 0; }
+    @media (max-width: 640px) { header { display: block; } nav { margin-top: 18px; } .top { display: block; } .badge { display: inline-block; margin-top: 10px; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>JobPulse</h1>
+      <p class="lede">Analyzed job postings, newest first.</p>
+    </div>
+    <nav>
+      <a class="{{if eq .Filter ""}}active{{end}}" href="/">All</a>
+      <a class="{{if eq .Filter "review"}}active{{end}}" href="/?recommendation=review">Review</a>
+      <a class="{{if eq .Filter "skip"}}active{{end}}" href="/?recommendation=skip">Skipped</a>
+    </nav>
+  </header>
+  <section class="grid">
+  {{if .Error}}<p class="empty">Dashboard error: {{.Error}}</p>{{end}}
+  {{if not .Jobs}}<p class="empty">No analyzed jobs yet. Start Analyst and wait for the stream to be processed.</p>{{end}}
+  {{range .Jobs}}
+    <article>
+      <div class="top">
+        <div>
+          <h2><a href="{{.URL}}" target="_blank" rel="noreferrer">{{.Title}}</a></h2>
+          <p class="meta">{{.Company}} · {{.Location}} · {{.ScoredAt}}</p>
+        </div>
+        <div>
+          <span class="score">{{.Score}}/10</span>
+          <span class="badge {{.Recommendation}}">{{.Recommendation}}</span>
+        </div>
+      </div>
+      <details><summary>Analysis details</summary><pre>{{.Summary}}</pre></details>
+    </article>
+  {{end}}
+  </section>
+</main>
+</body>
+</html>

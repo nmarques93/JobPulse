@@ -16,6 +16,20 @@ import (
 
 type Store struct{ db *sql.DB }
 
+type ScoredPosting struct {
+	ID              string `json:"id"`
+	Company         string `json:"company"`
+	Title           string `json:"title"`
+	Location        string `json:"location"`
+	URL             string `json:"url"`
+	Score           int    `json:"score"`
+	Recommendation  string `json:"recommendation"`
+	MatchedKeywords string `json:"matched_keywords"`
+	Gaps            string `json:"gaps"`
+	Summary         string `json:"summary"`
+	ScoredAt        string `json:"scored_at"`
+}
+
 func Open(path string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, err
@@ -34,6 +48,38 @@ func Open(path string) (*Store, error) {
 }
 
 func (s *Store) Close() error { return s.db.Close() }
+
+func (s *Store) ListScored(limit int, recommendation string) ([]ScoredPosting, error) {
+	if limit < 1 || limit > 500 {
+		limit = 100
+	}
+	query := `SELECT p.id, p.company, p.title, p.location, p.url, s.score,
+		s.recommendation, s.matched_keywords, s.gaps, s.summary, s.scored_at
+		FROM scored_postings s JOIN postings p ON p.id = s.posting_id`
+	args := []any{}
+	if recommendation != "" {
+		query += " WHERE s.recommendation = ?"
+		args = append(args, recommendation)
+	}
+	query += " ORDER BY s.scored_at DESC LIMIT ?"
+	args = append(args, limit)
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var postings []ScoredPosting
+	for rows.Next() {
+		var posting ScoredPosting
+		if err := rows.Scan(&posting.ID, &posting.Company, &posting.Title, &posting.Location,
+			&posting.URL, &posting.Score, &posting.Recommendation, &posting.MatchedKeywords,
+			&posting.Gaps, &posting.Summary, &posting.ScoredAt); err != nil {
+			return nil, err
+		}
+		postings = append(postings, posting)
+	}
+	return postings, rows.Err()
+}
 
 // Save returns true only when the posting is new or its meaningful content changed.
 func (s *Store) Save(posting model.JobPosting) (bool, error) {
