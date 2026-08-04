@@ -72,7 +72,8 @@ class Analyst:
             "compensation": result.compensation.as_dict() if result.compensation else None,
         }
         llm_result = None
-        if os.getenv("DEEPSEEK_API_KEY"):
+        # Deterministic rejects do not need an expensive model call.
+        if os.getenv("DEEPSEEK_API_KEY") and result.recommendation == "review":
             try:
                 llm_result = enrich(posting, self.profile, baseline)
             except RuntimeError as error:

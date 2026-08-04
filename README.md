@@ -127,6 +127,10 @@ The default database is `./data/jobpulse.db`. Results can be inspected with
 SQLite or the consumer logs. Deterministic analysis always runs first. To
 enable optional DeepSeek enrichment, set `DEEPSEEK_API_KEY` in `.env`; without
 it, the pipeline remains fully functional and does not call an LLM.
+DeepSeek is called only for deterministic `review` candidates, not obvious
+rejects. Job descriptions are truncated before sending and responses are
+bounded to keep latency and token usage predictable. These limits can be
+adjusted with `DEEPSEEK_MAX_DESCRIPTION_CHARS` and `DEEPSEEK_MAX_TOKENS`.
 
 ## Tests
 

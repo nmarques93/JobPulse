@@ -13,9 +13,21 @@ def enrich(posting: dict[str, Any], profile: dict[str, Any], baseline: dict[str,
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
         return None
+    max_description_chars = int(os.getenv("DEEPSEEK_MAX_DESCRIPTION_CHARS", "10000"))
+    description = posting.get("description", "")
+    if len(description) > max_description_chars:
+        description = description[:max_description_chars] + "\n[description truncated]"
+    compact_posting = {
+        "title": posting.get("title", ""),
+        "company": posting.get("company", ""),
+        "location": posting.get("location", ""),
+        "url": posting.get("url", ""),
+        "description": description,
+    }
     request_body = {
         "model": os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
         "temperature": 0,
+        "max_tokens": int(os.getenv("DEEPSEEK_MAX_TOKENS", "500")),
         "response_format": {"type": "json_object"},
         "messages": [
             {
@@ -29,7 +41,7 @@ def enrich(posting: dict[str, Any], profile: dict[str, Any], baseline: dict[str,
             },
             {
                 "role": "user",
-                "content": json.dumps({"profile": profile, "baseline": baseline, "posting": posting}),
+                "content": json.dumps({"profile": profile, "baseline": baseline, "posting": compact_posting}),
             },
         ],
     }
