@@ -142,6 +142,11 @@ Edit `profile/profile.json` for the candidate being matched. The application
 code contains no candidate-specific assumptions; the profile controls role
 types, seniority, location eligibility, preferred domains, strong skills,
 transferable skills, and exclusions. `profile/profile.json` is ignored by git.
+For location matching, use `eligible_locations` for countries, cities, or
+regions; `eligible_remote_scopes` for phrases such as `EU`, `EEA`, `EMEA`, or
+`worldwide`; and `excluded_locations` for countries or regions to reject.
+Unscoped `Remote` roles are not assumed eligible unless
+`allow_unscoped_remote` is set to `true`.
 
 Trigger a poll manually with:
 

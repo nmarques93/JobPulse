@@ -46,6 +46,43 @@ class FilterTests(unittest.TestCase):
         self.assertEqual(result.compensation.low, 307000)
         self.assertEqual(result.compensation.high, 307000)
 
+    def test_us_remote_is_not_compatible_with_europe_profile(self):
+        profile = {
+            "eligible_locations": ["portugal", "europe"],
+            "eligible_remote_scopes": ["portugal", "europe", "worldwide"],
+            "excluded_locations": ["united states", "us"],
+            "remote_terms": ["remote"],
+            "allow_unscoped_remote": False,
+        }
+        result = score_posting("Senior Backend Engineer", "Remote - United States", "Remote role", profile)
+        self.assertEqual(result.recommendation, "skip")
+        self.assertIn("explicitly excluded", result.concerns[0])
+
+    def test_unscoped_remote_is_not_assumed_eligible(self):
+        profile = {
+            "eligible_locations": ["portugal", "europe"],
+            "eligible_remote_scopes": ["portugal", "europe", "worldwide"],
+            "excluded_locations": ["united states", "us"],
+            "remote_terms": ["remote"],
+            "allow_unscoped_remote": False,
+        }
+        result = score_posting("Senior Backend Engineer", "Remote", "Work remotely", profile)
+        self.assertEqual(result.recommendation, "skip")
+        self.assertIn("without an eligible", result.concerns[0])
+
+    def test_eu_remote_is_eligible_when_configured(self):
+        profile = {
+            "role_types": {"product_backend": ["backend engineer"]},
+            "seniority": ["senior"],
+            "eligible_locations": ["portugal", "europe", "eu"],
+            "eligible_remote_scopes": ["portugal", "europe", "eu"],
+            "excluded_locations": ["united states", "us"],
+            "remote_terms": ["remote"],
+            "strong_skills": ["python"],
+        }
+        result = score_posting("Senior Backend Engineer", "Remote - EU", "Build Python services", profile)
+        self.assertEqual(result.recommendation, "review")
+
 
 if __name__ == "__main__":
     unittest.main()
