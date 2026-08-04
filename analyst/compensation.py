@@ -15,9 +15,9 @@ class Compensation:
 
 _RANGE = re.compile(
     r"(?P<currency>\$|€|£|USD|EUR|GBP)\s*"
-    r"(?P<low>[\d,.]+)\s*(?P<low_suffix>[kK])?"
+    r"(?P<low>\d[\d,]*(?:\.\d+)?)\s*(?P<low_suffix>[kK])?"
     r"(?:\s*(?:-|–|—|to)\s*(?P<currency2>\$|€|£|USD|EUR|GBP)?\s*"
-    r"(?P<high>[\d,.]+)\s*(?P<high_suffix>[kK])?)?",
+    r"(?P<high>\d[\d,]*(?:\.\d+)?)\s*(?P<high_suffix>[kK])?)?",
     re.IGNORECASE,
 )
 

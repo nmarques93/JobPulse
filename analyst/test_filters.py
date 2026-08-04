@@ -40,6 +40,12 @@ class FilterTests(unittest.TestCase):
         self.assertEqual(result.compensation.currency, "EUR")
         self.assertEqual(result.compensation.high, 80000)
 
+    def test_compensation_ignores_sentence_punctuation(self):
+        profile = {"remote_allowed": True, "remote_terms": ["remote"]}
+        result = score_posting("Engineer", "Remote", "Compensation: $307000.00.", profile)
+        self.assertEqual(result.compensation.low, 307000)
+        self.assertEqual(result.compensation.high, 307000)
+
 
 if __name__ == "__main__":
     unittest.main()
