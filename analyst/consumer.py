@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import redis
 
 from .filters import score_posting
+from .deepseek import enrich
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 LOGGER = logging.getLogger("jobpulse.analyst")
@@ -64,12 +65,19 @@ class Analyst:
     def process(self, message: dict[str, str]) -> None:
         posting = json.loads(message["payload"])
         result = score_posting(posting["title"], posting["location"], posting["description"], self.profile)
-        summary = json.dumps({
+        baseline = {
             "role_type": result.role_type,
             "evidence": result.evidence,
             "concerns": result.concerns,
             "compensation": result.compensation.as_dict() if result.compensation else None,
-        }, separators=(",", ":"))
+        }
+        llm_result = None
+        if os.getenv("DEEPSEEK_API_KEY"):
+            try:
+                llm_result = enrich(posting, self.profile, baseline)
+            except RuntimeError as error:
+                LOGGER.warning("DeepSeek enrichment unavailable for %s: %s", posting["id"], error)
+        summary = json.dumps({"baseline": baseline, "deepseek": llm_result}, separators=(",", ":"))
         self.db.execute(
             """INSERT INTO scored_postings
             (posting_id, score, recommendation, matched_keywords, gaps, summary, scoring_status, scored_at)

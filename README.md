@@ -46,8 +46,9 @@ curl -X POST http://localhost:8080/trigger/greenhouse
 ```
 
 The default database is `./data/jobpulse.db`. Results can be inspected with
-SQLite or the consumer logs. The analyst currently uses deterministic
-heuristics; the scoring interface is ready for an LLM implementation later.
+SQLite or the consumer logs. Deterministic analysis always runs first. To
+enable optional DeepSeek enrichment, set `DEEPSEEK_API_KEY` in `.env`; without
+it, the pipeline remains fully functional and does not call an LLM.
 
 ## Tests
 
