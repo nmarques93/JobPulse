@@ -91,6 +91,19 @@ once the workflow proves useful.
 
 Prerequisites: Go 1.22+, Python 3.11+, and Docker.
 
+The helper scripts automate setup and process management:
+
+```sh
+./scripts/setup.sh
+./scripts/start.sh
+./scripts/status.sh
+./scripts/stop.sh
+```
+
+`start.sh` starts Redis, builds Scout, launches both services in the
+background, and writes logs to `logs/scout.log` and `logs/analyst.log`.
+`stop.sh` stops the two application processes but leaves Redis running.
+
 ```sh
 docker compose up -d redis
 
