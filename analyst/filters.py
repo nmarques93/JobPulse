@@ -2,6 +2,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from .compensation import Compensation, extract_compensation
+
 
 def _terms(profile: dict[str, Any], *keys: str) -> list[str]:
     values: list[str] = []
@@ -23,6 +25,7 @@ class Match:
     role_type: str = "unknown"
     evidence: list[str] = field(default_factory=list)
     concerns: list[str] = field(default_factory=list)
+    compensation: Compensation | None = None
 
 
 def score_posting(title: str, location: str, description: str, profile: dict[str, Any]) -> Match:
@@ -39,6 +42,7 @@ def score_posting(title: str, location: str, description: str, profile: dict[str
     strong_skills = _terms(profile, "strong_skills")
     transferable_skills = _terms(profile, "transferable_skills")
     seniority = _terms(profile, "seniority")
+    compensation = extract_compensation(description)
 
     role_type = "unknown"
     role_matches: list[str] = []
@@ -74,6 +78,14 @@ def score_posting(title: str, location: str, description: str, profile: dict[str
         evidence.append("Seniority matches the configured target levels")
     if not location_match:
         concerns.append("Location or remote eligibility is not compatible")
+    minimum_compensation = profile.get("minimum_annual_compensation") or {}
+    if compensation and compensation.period == "year" and minimum_compensation:
+        if compensation.currency != str(minimum_compensation.get("currency", "")).upper():
+            concerns.append("Compensation currency differs from the configured preference")
+        elif compensation.high < float(minimum_compensation.get("amount", 0)):
+            concerns.append("Published compensation is below the configured minimum")
+    elif not compensation:
+        concerns.append("Compensation was not found in the posting")
     if not seniority_match and seniority:
         concerns.append("Target seniority was not found in the job title")
     if missing_required:
@@ -82,7 +94,8 @@ def score_posting(title: str, location: str, description: str, profile: dict[str
         concerns.append(f"Excluded terms found: {', '.join(excluded)}")
     if excluded_roles:
         concerns.append(f"Excluded role type found: {', '.join(excluded_roles)}")
-    if not location_match or excluded or excluded_roles or missing_required:
+    compensation_below_minimum = any("below the configured minimum" in concern for concern in concerns)
+    if not location_match or excluded or excluded_roles or missing_required or compensation_below_minimum:
         recommendation = "skip"
     else:
         raw = 0.0
@@ -95,4 +108,4 @@ def score_posting(title: str, location: str, description: str, profile: dict[str
         recommendation = "review" if score >= int(profile.get("minimum_score", 5)) else "skip"
     if "score" not in locals():
         score = 1
-    return Match(score, matched, gaps, recommendation, role_type, evidence, concerns)
+    return Match(score, matched, gaps, recommendation, role_type, evidence, concerns, compensation)

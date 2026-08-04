@@ -64,7 +64,12 @@ class Analyst:
     def process(self, message: dict[str, str]) -> None:
         posting = json.loads(message["payload"])
         result = score_posting(posting["title"], posting["location"], posting["description"], self.profile)
-        summary = json.dumps({"evidence": result.evidence, "concerns": result.concerns}, separators=(",", ":"))
+        summary = json.dumps({
+            "role_type": result.role_type,
+            "evidence": result.evidence,
+            "concerns": result.concerns,
+            "compensation": result.compensation.as_dict() if result.compensation else None,
+        }, separators=(",", ":"))
         self.db.execute(
             """INSERT INTO scored_postings
             (posting_id, score, recommendation, matched_keywords, gaps, summary, scoring_status, scored_at)

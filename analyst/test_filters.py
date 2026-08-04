@@ -28,6 +28,18 @@ class FilterTests(unittest.TestCase):
         result = score_posting("Senior Backend Engineer", "Remote", "Machine learning and Python", profile)
         self.assertEqual(result.recommendation, "skip")
 
+    def test_compensation_is_extracted_and_can_fail_floor(self):
+        profile = {
+            "role_types": {"product_backend": ["backend engineer"]},
+            "seniority": ["senior"], "remote_allowed": True,
+            "remote_terms": ["remote"], "strong_skills": ["python"],
+            "minimum_annual_compensation": {"currency": "EUR", "amount": 85000},
+        }
+        result = score_posting("Senior Backend Engineer", "Remote", "Build Python services. €70K–€80K", profile)
+        self.assertEqual(result.recommendation, "skip")
+        self.assertEqual(result.compensation.currency, "EUR")
+        self.assertEqual(result.compensation.high, 80000)
+
 
 if __name__ == "__main__":
     unittest.main()

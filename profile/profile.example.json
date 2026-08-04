@@ -13,5 +13,9 @@
   "transferable_skills": [],
   "required_keywords": [],
   "excluded_keywords": ["onsite", "us only"],
+  "minimum_annual_compensation": {
+    "currency": "EUR",
+    "amount": 0
+  },
   "minimum_score": 5
 }
