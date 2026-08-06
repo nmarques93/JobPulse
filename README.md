@@ -107,9 +107,16 @@ Prerequisites: Go 1.22+, Python 3.11+, and Docker.
 The helper scripts automate setup and process management:
 
 ```sh
+# First run only. Creates .env, profile/profile.json, and .venv.
 ./scripts/setup.sh
+
+# Start Redis, Scout, and Analyst in the background.
 ./scripts/start.sh
+
+# Check processes and Scout health.
 ./scripts/status.sh
+
+# Stop Scout and Analyst when finished.
 ./scripts/stop.sh
 ```
 
@@ -117,23 +124,10 @@ The helper scripts automate setup and process management:
 background, and writes logs to `logs/scout.log` and `logs/analyst.log`.
 `stop.sh` stops the two application processes but leaves Redis running.
 
-```sh
-docker compose up -d redis
-
-cp .env.example .env
-cp profile/profile.example.json profile/profile.json
-set -a; . .env; set +a
-go run ./collector/cmd/scout
-```
-
-In another terminal:
-
-```sh
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r analyst/requirements.txt
-python -m analyst.consumer
-```
+Before the first `start.sh`, edit `.env` and `profile/profile.json` with the
+boards, DeepSeek settings, and matching criteria you want to use. To replay
+the existing Redis stream with a fresh consumer group, use for example
+`REDIS_GROUP=analyst-v5 ./scripts/start.sh`.
 
 Set `GREENHOUSE_BOARDS` in `.env` to comma-separated Greenhouse board names.
 For example, `GREENHOUSE_BOARDS=acme,example`.
